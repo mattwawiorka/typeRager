@@ -1,10 +1,11 @@
 const mysql = require('mysql');
+const db = require('./db.json');
 
 var con = mysql.createConnection({
-  host: "localhost",
-  user: "root",
-  password: "82793Wiki!",
-  database: "typeRager"
+  host: db.host,
+  user: db.user,
+  password: db.password,
+  database: db.database
 });
 
 con.connect(function(err) {
