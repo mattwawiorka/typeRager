@@ -106,7 +106,8 @@ bot.on('message', msg=>{
 		con.query("SELECT * FROM users", function (err, result) {
 			if (err) throw err;
 			result.forEach(function(element) {
-				getUserStats(element.username,msg,element.discordUser,"wpm");
+				let discordUser = bot.users.find( user => user.username == element.discordUser);
+				getUserStats(element.username,msg,discordUser,"wpm");
 			});
 		});
 
@@ -132,7 +133,6 @@ bot.on('message', msg=>{
 			var wait = new Promise( (resolve,reject) => {
 				result.forEach( (element, index,array) => {
 				
-				
 					request({
 						url: trProfileURL+element.username
 					}, function (error, response, body) {
@@ -155,11 +155,12 @@ bot.on('message', msg=>{
 					});
 					
 					setTimeout( () => {if (index == array.length - 1) resolve();}, 1000);
+					
 				});
 			});
 			
 			wait.then(() => {
-
+				discordUser = bot.users.find( user => user.username == discordUser);
 				msg.channel.send("Server Record:" + "\n" + best + " WPM" + "\n" + "Set by: " + discordUser);
 			});	
 			
