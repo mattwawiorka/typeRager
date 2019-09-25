@@ -1,6 +1,7 @@
 const Discord = require('discord.js');
 const request = require('request');
 const cheerio = require('cheerio');
+const util = require('util');
 const mysql = require('mysql');
 const db = require('./db.js');
 const auth = require('./auth.json');
@@ -152,6 +153,7 @@ bot.on('message', msg=>{
 							}
 							
 						}
+						
 					});
 					
 					setTimeout( () => {if (index == array.length - 1) resolve();}, 1000);
@@ -170,3 +172,78 @@ bot.on('message', msg=>{
 	
 })
 
+// Set New PR
+bot.on('ready', ()=>{
+	
+	var channel = bot.channels.find( channel => channel.name == 'general');
+	var newBest;
+	var best = 0;
+	
+	var interval = setInterval( function () {
+		
+		con.query("SELECT * FROM users", (err, result)=>{
+			if (err) throw err;
+			var wait = new Promise( (resolve,reject) => {
+				result.forEach( (element, index,array) => {
+					
+					//oldBest = element.bestRace;
+					//console.log(element.discordUser + " Old Best: " + oldBest);
+				
+					request({
+						url: trProfileURL+element.username
+					}, function (error, response, body) {
+						if (!error && response.statusCode === 200) {
+							
+							const $ = cheerio.load(body);
+
+							newBest = $(":contains('Best Race') + td").text();
+
+							newBest = newBest.trim();
+							
+							newBest = parseInt(newBest);
+							
+							//oldBest = element.bestRace;
+							
+							console.log(element.discordUser + " New Best: " + newBest);
+							
+							if (newBest > best) {
+								best = newBest;
+							}
+
+							if (newBest > element.bestRace) {
+								console.log("PR");
+								let discordUser = bot.users.find( user => user.username == element.discordUser);
+								con.query("UPDATE users SET bestRace=\""+newBest+"\" WHERE username=\""+element.username + "\"",  function (err, result) {
+									if (err) throw err;
+									if (best != newBest) channel.send(discordUser + " Hit a new PR!" + "\n" + newBest + " WPM");
+								});	
+								
+								if (best = newBest) { 
+									channel.send("New Server PR!" + "\n" + newBest + " WPM" + "\n Set by: " + discordUser);
+								}
+								
+							}
+							
+						}
+						
+					});
+					
+					setTimeout( () => {if (index == array.length - 1) resolve();}, 5000);
+					
+				});
+			});
+			
+			wait.then(() => {
+				//discordUser = bot.users.find( user => user.username == discordUser);
+				//msg.channel.send("Server Record:" + "\n" + best + " WPM" + "\n" + "Set by: " + discordUser);
+			});	
+			
+		});
+	
+	
+		
+	}, 30000);
+	
+	//clearInterval(interval);
+	
+});
