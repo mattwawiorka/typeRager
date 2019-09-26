@@ -215,11 +215,11 @@ bot.on('ready', ()=>{
 								let discordUser = bot.users.find( user => user.username == element.discordUser);
 								con.query("UPDATE users SET bestRace=\""+newBest+"\" WHERE username=\""+element.username + "\"",  function (err, result) {
 									if (err) throw err;
-									if (best != newBest) channel.send(discordUser + " Hit a new PR!" + "\n" + newBest + " WPM");
+									if (best !== newBest) channel.send(discordUser + " Hit a new PR!" + "\n" + newBest + " WPM");
 								});	
 								
-								if (best = newBest) { 
-									channel.send("New Server PR!" + "\n" + newBest + " WPM" + "\n Set by: " + discordUser);
+								if (best == newBest) { 
+									channel.send("New Server PR!" + "\n" + newBest + " WPM" + "\nSet by: " + discordUser);
 								}
 								
 							}
