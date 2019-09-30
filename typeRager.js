@@ -3,6 +3,7 @@ const request = require('request');
 const cheerio = require('cheerio');
 const util = require('util');
 const mysql = require('mysql');
+const puppeteer = require('puppeteer');
 const db = require('./db.js');
 const auth = require('./auth.json');
 
@@ -14,6 +15,20 @@ var con = db.con;
 
 const trDataURL='https://data.typeracer.com/users?id=tr:';
 const trProfileURL='https://data.typeracer.com/pit/profile?user=';
+
+const raceSelector = "#dUI > table > tbody > tr:nth-child(2) > td:nth-child(2) > div > div.mainViewport > div > table > tbody > tr:nth-child(4) > td > table > tbody > tr > td:nth-child(2) > table > tbody > tr:nth-child(1) > td > a";
+const inviteSelector = ".roomSection table > tbody > tr > td:nth-child(2) > div > table > tbody > tr > td:nth-child(1) > a";
+const linkSelector = "body > div.DialogBox.trPopupDialog.roomInvitePopup > div > div > div.dialogContent > div > div.bodyWidgetHolder > table > tbody > tr:nth-child(2) > td > table > tbody > tr:nth-child(1) > td > input";
+const emailSelector ='a.gwt-Anchor[href^="mailto:?subject=Race%20me%20on%"]';
+
+// const onReady = 
+// const onMessage = require('./custom_modules/messageHandler.js');
+
+// bot
+//  .on('ready', onReady)
+//  .on('message', onMessage)
+  
+
 
 // Initialize Discord Bot
 bot.on('ready', () =>{
@@ -185,9 +200,6 @@ bot.on('ready', ()=>{
 			if (err) throw err;
 			var wait = new Promise( (resolve,reject) => {
 				result.forEach( (element, index,array) => {
-					
-					//oldBest = element.bestRace;
-					//console.log(element.discordUser + " Old Best: " + oldBest);
 				
 					request({
 						url: trProfileURL+element.username
@@ -202,16 +214,11 @@ bot.on('ready', ()=>{
 							
 							newBest = parseInt(newBest);
 							
-							//oldBest = element.bestRace;
-							
-							console.log(element.discordUser + " New Best: " + newBest);
-							
 							if (newBest > best) {
 								best = newBest;
 							}
 
 							if (newBest > element.bestRace) {
-								console.log("PR");
 								let discordUser = bot.users.find( user => user.username == element.discordUser);
 								con.query("UPDATE users SET bestRace=\""+newBest+"\" WHERE username=\""+element.username + "\"",  function (err, result) {
 									if (err) throw err;
@@ -245,5 +252,43 @@ bot.on('ready', ()=>{
 	}, 30000);
 	
 	//clearInterval(interval);
+	
+});
+
+
+// Send Race Invite
+bot.on('message', msg=>{
+	if(msg.content.startsWith('!race') || msg.content.startsWith('!RACE') || msg.content.startsWith('!Race')) {
+		
+		( async	() => {
+			
+			const browser = await puppeteer.launch();
+			const page = await browser.newPage();
+
+			await page.goto("https://play.typeracer.com");
+			
+			await page.waitForSelector(raceSelector);
+			
+			await page.click(raceSelector);
+	
+			await page.waitForSelector(inviteSelector);
+			
+			await page.click(inviteSelector);
+			
+			await page.waitForSelector(emailSelector);
+			
+			var raceLink = await page.evaluate( () => document.querySelector('a.gwt-Anchor[href^="mailto:?subject=Race"]').href);
+			
+			raceLink = raceLink.slice(raceLink.length - 10, raceLink.length);
+			
+			raceLink = "https://play.typeracer.com?rt=" + raceLink;
+
+			var channel = bot.channels.find( channel => channel.name == 'general');
+			
+			channel.send("Let's Race! \n" + raceLink);
+			
+		})();
+		
+	}
 	
 });
