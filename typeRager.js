@@ -16,6 +16,8 @@ var con = db.con;
 const trDataURL='https://data.typeracer.com/users?id=tr:';
 const trProfileURL='https://data.typeracer.com/pit/profile?user=';
 
+var userStat, statTitle, best, discordUser, userBest, currentBest, newBest, added;
+
 const raceSelector = "#dUI > table > tbody > tr:nth-child(2) > td:nth-child(2) > div > div.mainViewport > div > table > tbody > tr:nth-child(4) > td > table > tbody > tr > td:nth-child(2) > table > tbody > tr:nth-child(1) > td > a";
 const inviteSelector = ".roomSection table > tbody > tr > td:nth-child(2) > div > table > tbody > tr > td:nth-child(1) > a";
 const linkSelector = "body > div.DialogBox.trPopupDialog.roomInvitePopup > div > div > div.dialogContent > div > div.bodyWidgetHolder > table > tbody > tr:nth-child(2) > td > table > tbody > tr:nth-child(1) > td > input";
@@ -37,8 +39,6 @@ bot.on('ready', () =>{
 
 // Get User Stats
 function getUserStats(user,msg,discordUser,stat) {
-	var userStat;
-	var statTitle;
 	request({
 			url: trProfileURL+user
 		}, function (error, response, body) {
@@ -58,10 +58,9 @@ function getUserStats(user,msg,discordUser,stat) {
 				
 				userStat = userStat.trim();
 				
-				msg.channel.send(discordUser + statTitle + userStat);
-				
+				msg.channel.send(discordUser + statTitle + userStat);	
 			}
-		})
+		});
 }
 
 // Get Player WPM
@@ -82,9 +81,7 @@ bot.on('message', msg=>{
 			user = result[0].username;
 			getUserStats(user,msg,discordUser,"wpm");
 		});
-		
 	}
-	
 })
 
 // Get Player Best Race
@@ -104,10 +101,8 @@ bot.on('message', msg=>{
 			if (err) throw err;
 			user = result[0].username;
 			getUserStats(user,msg,discordUser,"best");
-		});
-		
+		});	
 	}
-	
 })
 
 // Get Group WPM
@@ -126,9 +121,7 @@ bot.on('message', msg=>{
 				getUserStats(element.username,msg,discordUser,"wpm");
 			});
 		});
-
 	}
-	
 })
 
 // Get Group Best Race
@@ -140,15 +133,14 @@ bot.on('message', msg=>{
 		
 		if (group != "all") return;
 		
-		var best = 0;
-		var discordUser;
-		var userBest;
-	
+		best = 0;
+
 		con.query("SELECT * FROM users", (err, result)=>{
 			if (err) throw err;
+			
 			var wait = new Promise( (resolve,reject) => {
 				result.forEach( (element, index,array) => {
-				
+					
 					request({
 						url: trProfileURL+element.username
 					}, function (error, response, body) {
@@ -166,9 +158,7 @@ bot.on('message', msg=>{
 								best = userBest;
 								discordUser = element.discordUser;
 							}
-							
 						}
-						
 					});
 					
 					setTimeout( () => {if (index == array.length - 1) resolve();}, 1000);
@@ -179,27 +169,25 @@ bot.on('message', msg=>{
 			wait.then(() => {
 				discordUser = bot.users.find( user => user.username == discordUser);
 				msg.channel.send("Server Record:" + "\n" + best + " WPM" + "\n" + "Set by: " + discordUser);
-			});	
-			
+			});		
 		});
-		
 	}
-	
 })
 
 // Set New PR
 bot.on('ready', ()=>{
 	
 	var channel = bot.channels.find( channel => channel.name == 'general');
-	var newBest;
-	var best = 0;
 	
 	var interval = setInterval( function () {
+		
+		best = 0;
+		newBest = 0;
 		
 		con.query("SELECT * FROM users", (err, result)=>{
 			if (err) throw err;
 			var wait = new Promise( (resolve,reject) => {
-				result.forEach( (element, index,array) => {
+				result.forEach( (element, index, array) => {
 				
 					request({
 						url: trProfileURL+element.username
@@ -208,27 +196,19 @@ bot.on('ready', ()=>{
 							
 							const $ = cheerio.load(body);
 
-							newBest = $(":contains('Best Race') + td").text();
+							currentBest = $(":contains('Best Race') + td").text();
 
-							newBest = newBest.trim();
+							currentBest = currentBest.trim();
 							
-							newBest = parseInt(newBest);
+							currentBest = parseInt(currentBest);
 							
-							if (newBest > best) {
-								best = newBest;
+							if (currentBest > best) {
+								best = currentBest;
 							}
 
-							if (newBest > element.bestRace) {
-								let discordUser = bot.users.find( user => user.username == element.discordUser);
-								con.query("UPDATE users SET bestRace=\""+newBest+"\" WHERE username=\""+element.username + "\"",  function (err, result) {
-									if (err) throw err;
-									if (best !== newBest) channel.send(discordUser + " Hit a new PR!" + "\n" + newBest + " WPM");
-								});	
-								
-								if (best == newBest) { 
-									channel.send("New Server PR!" + "\n" + newBest + " WPM" + "\nSet by: " + discordUser);
-								}
-								
+							if (currentBest > element.bestRace) {
+								newBest = currentBest;
+								discordUser = element.discordUser;				
 							}
 							
 						}
@@ -241,18 +221,20 @@ bot.on('ready', ()=>{
 			});
 			
 			wait.then(() => {
-				//discordUser = bot.users.find( user => user.username == discordUser);
-				//msg.channel.send("Server Record:" + "\n" + best + " WPM" + "\n" + "Set by: " + discordUser);
-			});	
-			
+				if (newBest > 0) {
+					con.query("UPDATE users SET bestRace=\""+newBest+"\" WHERE discordUser=\"" + discordUser + "\"",  function (err, result) {
+						if (err) throw err;
+						discordUser = bot.users.find( user => user.username == discordUser);
+						if (best == newBest)  {
+							channel.send("New Server PR!" + "\n" + newBest + " WPM" + "\nSet by: " + discordUser);
+						} else {
+							channel.send(discordUser + " Hit a new PR!" + "\n" + newBest + " WPM");
+						}
+					});	
+				}	
+			});	 
 		});
-	
-	
-		
 	}, 30000);
-	
-	//clearInterval(interval);
-	
 });
 
 
@@ -288,7 +270,38 @@ bot.on('message', msg=>{
 			channel.send("Let's Race! \n" + raceLink);
 			
 		})();
-		
 	}
-	
+});
+
+
+// Add User to Database
+bot.on('message', msg=>{
+	if(msg.content.startsWith('!add') || msg.content.startsWith('!ADD') || msg.content.startsWith('!Add')) {
+		
+		var username = msg.content.slice(4, msg.content.length).trim();
+		
+		if (username == "") {
+			msg.reply("Tell me your TypeRacer username after !add");
+			return;
+		}
+		
+		added = false;
+		
+		con.query("SELECT * FROM users", function (err, result) {
+			if (err) throw err;
+			result.forEach(function(element) {
+				if (element.discordUser == msg.member.user.username) {
+					added = true;
+				}
+			});
+			
+			if (added == true) {
+				msg.reply("You're already a member!");
+				return;
+			} else {
+				con.query("INSERT INTO users (username, discordUser) values (\"" + username + "\", \"" + msg.member.user.username + "\")");
+				msg.reply("You've been added!");
+			}
+		});
+	}
 });
