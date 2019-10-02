@@ -23,21 +23,81 @@ const inviteSelector = ".roomSection table > tbody > tr > td:nth-child(2) > div 
 const linkSelector = "body > div.DialogBox.trPopupDialog.roomInvitePopup > div > div > div.dialogContent > div > div.bodyWidgetHolder > table > tbody > tr:nth-child(2) > td > table > tbody > tr:nth-child(1) > td > input";
 const emailSelector ='a.gwt-Anchor[href^="mailto:?subject=Race%20me%20on%"]';
 
-// const onReady = 
-// const onMessage = require('./custom_modules/messageHandler.js');
 
-// bot
-//  .on('ready', onReady)
-//  .on('message', onMessage)
-  
+// const onMessage = require('./custom_modules/messageHandler.js');
+// bot.on('message', msg => onMessage(msg));
 
 
 // Initialize Discord Bot
-bot.on('ready', () =>{
+bot.on('ready', ()=>{
 	console.log('typeRager is online!');
-})
+});
 
-// Get User Stats
+// Begin Reporting New Records
+bot.on('ready', ()=>{
+	
+	var channel = bot.channels.find( channel => channel.name == 'general');
+	
+	var interval = setInterval( function () {
+		
+		best = 0;
+		newBest = 0;
+		
+		con.query("SELECT * FROM users", (err, result)=>{
+			if (err) throw err;
+			var wait = new Promise( (resolve,reject) => {
+				result.forEach( (element, index, array) => {
+				
+					request({
+						url: trProfileURL+element.username
+					}, function (error, response, body) {
+						if (!error && response.statusCode === 200) {
+							
+							const $ = cheerio.load(body);
+
+							currentBest = $(":contains('Best Race') + td").text();
+
+							currentBest = currentBest.trim();
+							
+							currentBest = parseInt(currentBest);
+							
+							if (currentBest > best) {
+								best = currentBest;
+							}
+
+							if (currentBest > element.bestRace) {
+								newBest = currentBest;
+								discordUser = element.discordUser;				
+							}
+							
+						}
+						
+					});
+					
+					setTimeout( () => {if (index == array.length - 1) resolve();}, 5000);
+					
+				});
+			});
+			
+			wait.then(() => {
+				if (newBest > 0) {
+					con.query("UPDATE users SET bestRace=\""+newBest+"\" WHERE discordUser=\"" + discordUser + "\"",  function (err, result) {
+						if (err) throw err;
+						discordUser = bot.users.find( user => user.username == discordUser);
+						if (best == newBest)  {
+							channel.send("New Server PR!" + "\n" + newBest + " WPM" + "\nSet by: " + discordUser);
+						} else {
+							channel.send(discordUser + " Hit a new PR!" + "\n" + newBest + " WPM");
+						}
+					});	
+				}	
+			});	 
+		});
+	}, 30000);
+});
+
+
+// Get User Stats Helper Function
 function getUserStats(user,msg,discordUser,stat) {
 	request({
 			url: trProfileURL+user
@@ -62,6 +122,10 @@ function getUserStats(user,msg,discordUser,stat) {
 			}
 		});
 }
+
+/*
+		C O M M A N D S
+*/
 
 // Get Player WPM
 bot.on('message', msg=>{
@@ -174,73 +238,10 @@ bot.on('message', msg=>{
 	}
 })
 
-// Set New PR
-bot.on('ready', ()=>{
-	
-	var channel = bot.channels.find( channel => channel.name == 'general');
-	
-	var interval = setInterval( function () {
-		
-		best = 0;
-		newBest = 0;
-		
-		con.query("SELECT * FROM users", (err, result)=>{
-			if (err) throw err;
-			var wait = new Promise( (resolve,reject) => {
-				result.forEach( (element, index, array) => {
-				
-					request({
-						url: trProfileURL+element.username
-					}, function (error, response, body) {
-						if (!error && response.statusCode === 200) {
-							
-							const $ = cheerio.load(body);
-
-							currentBest = $(":contains('Best Race') + td").text();
-
-							currentBest = currentBest.trim();
-							
-							currentBest = parseInt(currentBest);
-							
-							if (currentBest > best) {
-								best = currentBest;
-							}
-
-							if (currentBest > element.bestRace) {
-								newBest = currentBest;
-								discordUser = element.discordUser;				
-							}
-							
-						}
-						
-					});
-					
-					setTimeout( () => {if (index == array.length - 1) resolve();}, 5000);
-					
-				});
-			});
-			
-			wait.then(() => {
-				if (newBest > 0) {
-					con.query("UPDATE users SET bestRace=\""+newBest+"\" WHERE discordUser=\"" + discordUser + "\"",  function (err, result) {
-						if (err) throw err;
-						discordUser = bot.users.find( user => user.username == discordUser);
-						if (best == newBest)  {
-							channel.send("New Server PR!" + "\n" + newBest + " WPM" + "\nSet by: " + discordUser);
-						} else {
-							channel.send(discordUser + " Hit a new PR!" + "\n" + newBest + " WPM");
-						}
-					});	
-				}	
-			});	 
-		});
-	}, 30000);
-});
-
-
 // Send Race Invite
 bot.on('message', msg=>{
-	if(msg.content.startsWith('!race') || msg.content.startsWith('!RACE') || msg.content.startsWith('!Race')) {
+	if(msg.content.startsWith('!race') || msg.content.startsWith('!RACE') || msg.content.startsWith('!Race') || 
+		msg.content.startsWith('!rage') || msg.content.startsWith('!RAGE') || msg.content.startsWith('!Rage')) {
 		
 		( async	() => {
 			
@@ -261,7 +262,9 @@ bot.on('message', msg=>{
 			
 			var raceLink = await page.evaluate( () => document.querySelector('a.gwt-Anchor[href^="mailto:?subject=Race"]').href);
 			
-			raceLink = raceLink.slice(raceLink.length - 10, raceLink.length);
+			raceLink = raceLink.split("Frt%3D");
+			
+			raceLink = raceLink[1];
 			
 			raceLink = "https://play.typeracer.com?rt=" + raceLink;
 
@@ -272,7 +275,6 @@ bot.on('message', msg=>{
 		})();
 	}
 });
-
 
 // Add User to Database
 bot.on('message', msg=>{
