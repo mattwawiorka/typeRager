@@ -81,13 +81,13 @@ bot.on('ready', ()=>{
 			
 			wait.then(() => {
 				if (newBest > 0) {
-					con.query("UPDATE users SET bestRace=\""+newBest+"\" WHERE discordUser=\"" + discordUser + "\"",  function (err, result) {
+					con.query(`UPDATE users SET bestRace="${newBest}" WHERE discordUser="${discordUser}"`,  function (err, result) {
 						if (err) throw err;
 						discordUser = bot.users.find( user => user.username == discordUser);
 						if (best == newBest)  {
-							channel.send("New Server PR!" + "\n" + newBest + " WPM" + "\nSet by: " + discordUser);
+							channel.send(`New Server PR! \n${newBest} WPM \nSet by: ${discordUser}`);
 						} else {
-							channel.send(discordUser + " Hit a new PR!" + "\n" + newBest + " WPM");
+							channel.send(`${discordUser} Hit a new PR! \n${newBest} WPM`);
 						}
 					});	
 				}	
@@ -140,7 +140,7 @@ bot.on('message', msg=>{
 	
 		user = bot.users.get(user).username;
 		
-		con.query("SELECT username FROM users WHERE discordUser =\""+user+"\"", function (err, result) {
+		con.query(`SELECT username FROM users WHERE discordUser="${user}"`, function (err, result) {
 			if (err) throw err;
 			user = result[0].username;
 			getUserStats(user,msg,discordUser,"wpm");
@@ -161,7 +161,7 @@ bot.on('message', msg=>{
 	
 		user = bot.users.get(user).username;
 		
-		con.query("SELECT username FROM users WHERE discordUser =\""+user+"\"", function (err, result) {
+		con.query(`SELECT username FROM users WHERE discordUser="${user}"`, function (err, result) {
 			if (err) throw err;
 			user = result[0].username;
 			getUserStats(user,msg,discordUser,"best");
@@ -232,7 +232,7 @@ bot.on('message', msg=>{
 			
 			wait.then(() => {
 				discordUser = bot.users.find( user => user.username == discordUser);
-				msg.channel.send("Server Record:" + "\n" + best + " WPM" + "\n" + "Set by: " + discordUser);
+				msg.channel.send(`Server Record:\n${best} WPM\nSet by: ${discordUser}`);
 			});		
 		});
 	}
@@ -270,7 +270,7 @@ bot.on('message', msg=>{
 
 			var channel = bot.channels.find( channel => channel.name == 'general');
 			
-			channel.send("Let's Race! \n" + raceLink);
+			channel.send(`Let's Race! \n${raceLink}`);
 			
 		})();
 	}
@@ -301,7 +301,7 @@ bot.on('message', msg=>{
 				msg.reply("You're already a member!");
 				return;
 			} else {
-				con.query("INSERT INTO users (username, discordUser) values (\"" + username + "\", \"" + msg.member.user.username + "\")");
+				con.query(`INSERT INTO users (username, discordUser) values ("${username}", "${msg.member.user.username}")`);
 				msg.reply("You've been added!");
 			}
 		});
