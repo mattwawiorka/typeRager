@@ -1,48 +1,49 @@
+const request = require('request');
+const cheerio = require('cheerio');
+const puppeteer = require('puppeteer');
 
-module.exports = function (msg) {
-	switch (msg) {
-		 case msg.content.startsWith('!wpm@'):
-		 case msg.content.startsWith('!Wpm@'):
-		 case msg.content.startsWith('!WPM@'):
-		 case msg.content.startsWith('!wpm @'):
-		 case msg.content.startsWith('!Wpm @'):
-		 case msg.content.startsWith('!WPM @'):
-		   commands.handleWpmCommand(msg);
-		   break;
-		 case msg.content.startsWith('!best@'):
-		 case msg.content.startsWith('!Best@'):
-		 case msg.content.startsWith('!BEST@'):
-		 case msg.content.startsWith('!best @'):
-		 case msg.content.startsWith('!Best @'):
-		 case msg.content.startsWith('!BEST @'):
-		   commands.handleBestCommand(msg);
-		   break;  
-		 case msg.content.startsWith('!wpmall'):
-		 case msg.content.startsWith('!WpmAll'):
-		 case msg.content.startsWith('!WPMALL'):
-		 case msg.content.startsWith('!wpm all'):
-		 case msg.content.startsWith('!Wpm All'):
-		 case msg.content.startsWith('!WPM ALL'):
-		   commands.handleWpmAllCommand(msg);
-		   break;
-		 case msg.content.startsWith('!bestall'):
-		 case msg.content.startsWith('!BestAll'):
-		 case msg.content.startsWith('!BESTALL'):
-		 case msg.content.startsWith('!best all'):
-		 case msg.content.startsWith('!Best All'):
-		 case msg.content.startsWith('!BEST ALL'):
-		   commands.handleBestAllCommand(msg);
-		   break;  
-		 case msg.content.startsWith('!race'):
-		 case msg.content.startsWith('!Race'):
-		 case msg.content.startsWith('!RACE'):
-		   commands.handleRaceCommand(msg);
-		   break;  
-		 case msg.content.startsWith('!add'):
-		 case msg.content.startsWith('!Add'):
-		 case msg.content.startsWith('!ADD'):
-		   commands.handleAddCommand(msg);
-		   break; 
+const bot = require('../typeRager');
+const db = require('../db.js');
+
+const trProfileURL='https://data.typeracer.com/pit/profile?user=';
+
+const raceSelector = "#dUI > table > tbody > tr:nth-child(2) > td:nth-child(2) > div > div.mainViewport > div > table > tbody > tr:nth-child(4) > td > table > tbody > tr > td:nth-child(2) > table > tbody > tr:nth-child(1) > td > a";
+const inviteSelector = ".roomSection table > tbody > tr > td:nth-child(2) > div > table > tbody > tr > td:nth-child(1) > a";
+const emailSelector ='a.gwt-Anchor[href^="mailto:?subject=Race%20me%20on%"]';
+
+const con = db.con;
+
+var userStat, statTitle, best, discordUser, userBest, added;
+
+exports.handler = (msg) => {
+	if (msg.content.startsWith('!wpm<@') || msg.content.startsWith('!Wpm<@') || msg.content.startsWith('!WPM<@') ||
+		msg.content.startsWith('!wpm <@') || msg.content.startsWith('!Wpm <@') || msg.content.startsWith('!WPM <@'))
+	{
+		commands.handleWpmCommand(msg);
+	}
+	else if (msg.content.startsWith('!best<@') || msg.content.startsWith('!Best<@') || msg.content.startsWith('!BEST<@') ||
+		msg.content.startsWith('!best <@') || msg.content.startsWith('!Best <@') || msg.content.startsWith('!BEST <@'))
+	{
+		commands.handleBestCommand(msg);
+	}
+	else if (msg.content.startsWith('!wpmall') || msg.content.startsWith('!WpmAll') || msg.content.startsWith('!WPMALL') ||
+		msg.content.startsWith('!wpm all') || msg.content.startsWith('!Wpm All') || msg.content.startsWith('!WPM ALL'))
+	{
+		commands.handleWpmAllCommand(msg);
+	}
+	else if (msg.content.startsWith('!bestall') || msg.content.startsWith('!BestAll') || msg.content.startsWith('!BESTALL') ||
+		msg.content.startsWith('!best all') || msg.content.startsWith('!Best All') || msg.content.startsWith('!BEST ALL'))
+	{
+		commands.handleBestAllCommand(msg);
+	}
+	else if (msg.content.startsWith('!race') || msg.content.startsWith('!Race') || msg.content.startsWith('!RACE') ||
+		msg.content.startsWith('!rage') || msg.content.startsWith('!Rage') || msg.content.startsWith('!RAGE'))
+	{
+		commands.handleRaceCommand(msg);
+	}
+	else if (msg.content.startsWith('!add') || msg.content.startsWith('!Add') || msg.content.startsWith('!ADD'))
+	{
+		commands.handleAddCommand(msg);
 	}
 }
 
@@ -57,8 +58,6 @@ const commands = {
 		user = user.split("@")[1].split(">")[0];
 	
 		user = bot.users.get(user).username;
-		
-		console.log("in wpm");
 		
 		con.query("SELECT username FROM users WHERE discordUser =\""+user+"\"", function (err, result) {
 			if (err) throw err;
@@ -224,5 +223,3 @@ function getUserStats(user,msg,discordUser,stat) {
 			}
 		});
 }
-
-//export handleCommands
