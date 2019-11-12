@@ -143,7 +143,7 @@ const commands = {
 				headless: true,
 				args: [
 					'--disable-setuid-sandbox',
-                    '--disable-gpu',
+                    // '--disable-gpu',
                     '--no-first-run',
                     '--no-sandbox',
 				]
