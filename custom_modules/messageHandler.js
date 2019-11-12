@@ -141,8 +141,12 @@ const commands = {
 			
 			const browser = await puppeteer.launch({
 				headless: true,
-				args: ['no-sandbox',
-				'disable-setuid-sandbox',]
+				args: [
+					'--disable-setuid-sandbox',
+                    '--disable-gpu',
+                    '--no-first-run',
+                    '--no-sandbox',
+				]
 			});
 			const page = await browser.newPage();
 
