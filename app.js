@@ -11,13 +11,13 @@ bot.login(process.env.TOKEN);
 
 TR_PROFILE = 'https://data.typeracer.com/pit/profile?user=';
 
-const commands = require('./lib/messageHandler');
-bot.on('message', msg => commands.handler(msg));
-
 // Initialize Discord Bot
 bot.on('ready', () => {
 	console.log('typeRager is online!');
 });
+
+const commands = require('./lib/messageHandler');
+bot.on('message', msg => commands.handler(msg));
 
 // Begin Reporting New Records
 bot.on('ready', () => {
