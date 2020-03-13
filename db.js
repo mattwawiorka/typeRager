@@ -1,16 +1,15 @@
 const mysql = require('mysql2');
-const db = require('./db.json');
 
 var con = mysql.createConnection({
-  host: db.host,
-  user: db.user,
-  password: db.password,
-  database: db.database
+  host: process.env.DB_HOST,
+  user: process.env.DB_USER,
+  password: process.env.DB_PASSWORD,
+  database: process.env.DB_NAME
 });
 
-con.connect(function(err) {
+con.connect( (err) => {
   if (err) throw err;
-  console.log("Connected!");
+  console.log("Database connected!");
 });
 
 exports.con = con;

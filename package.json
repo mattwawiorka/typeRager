@@ -2,18 +2,19 @@
   "name": "typerager",
   "version": "1.0.0",
   "description": "TypeRacer bot for tracking member stats",
-  "main": "typeRager.js",
+  "main": "app.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node typeRager.js"
+    "start": "node app.js"
   },
   "author": "Matt Wawiorka",
   "license": "ISC",
   "dependencies": {
+    "axios": "^0.19.2",
     "cheerio": "^1.0.0-rc.3",
     "discord.js": "^11.5.1",
+    "dotenv": "^8.2.0",
     "mysql2": "^1.7.0",
-    "puppeteer": "^1.20.0",
-    "request": "^2.88.0"
+    "puppeteer": "^1.20.0"
   }
 }
