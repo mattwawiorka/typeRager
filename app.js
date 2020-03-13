@@ -9,6 +9,8 @@ const con = require('./db.js').con;
 const bot = new Discord.Client();
 bot.login(process.env.TOKEN);
 
+module.exports = bot;
+
 TR_PROFILE = 'https://data.typeracer.com/pit/profile?user=';
 
 // Initialize Discord Bot
@@ -75,4 +77,3 @@ bot.on('ready', () => {
 	}, 30000);
 });
 
-module.exports = bot;
