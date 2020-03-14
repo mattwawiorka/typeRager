@@ -27,53 +27,34 @@ bot.on('ready', () => {
 
 	// Check for server and/or user PRs every 30 seconds
 	setInterval( () => {
-		let best = 0; // best race for this interval
-		let newBest = 0; // set this above 0 if a new best is found
-		let discordUser; // set this as the new bests user
-		
 		con.query("SELECT * FROM users", (err, result) => {
 			if (err) throw err;
-			Promise.all(result.map( (user) => {
+			result.map( (user) => {
+				// For each user check their current best race on TR
 				axios.get(TR_PROFILE + user.username)
 				.then( response => {
-					if (response.statusCode === 200) {
-						const $ = cheerio.load(body);
+					const $ = cheerio.load(response.data);
 
-						let currentBest = $(":contains('Best Race') + td").text(); // current best from TR
+					let currentBest = $(":contains('Best Race') + td").text(); // current best from TR
 
-						currentBest = currentBest.trim();
-						
-						currentBest = parseInt(currentBest);
-						
-						// Set the higest race for this interval
-						if (currentBest > best) {
-							best = currentBest;
-						}
+					currentBest = parseInt(currentBest.trim());
 
-						// If the current best is higher than the stored value the user has a PR
-						if (currentBest > user.bestRace) {
-							newBest = currentBest;
-							discordUser = user.discordUser;				
-						}
+					// If the current best is higher than the stored value the user has a PR
+					if (currentBest > user.bestRace) {
+						con.query(`UPDATE users SET bestRace=? WHERE discordUser=?`, [currentBest, user.discordUser], (err) => {
+							if (err) throw err;
+							let discordUser = bot.users.find( u => u.username == user.discordUser);
+							// If the PR was the server best then its a server PR, otherwise just a personal PR
+							
+							if (result.some( u => { return u.bestRace > currentBest }))  {
+								channel.send(`${discordUser} Hit a new PR! \n${currentBest} WPM`);
+							} else {
+								channel.send(`New Server PR! \n${currentBest} WPM \nSet by: ${discordUser}`);
+							}
+						});	
 					}
 				})		
-			}))
-			.then(() => {
-				// If we have a PR update the database and send a message to the server
-				if (newBest > 0) {
-					con.query(`UPDATE users SET bestRace=? WHERE discordUser=?`, [newBest, discordUser], (err, result) => {
-						if (err) throw err;
-						discordUser = bot.users.find( user => user.username == discordUser);
-						// If the PR was the server best then its a server PR, otherwise just a personal PR
-						if (best === newBest)  {
-							channel.send(`New Server PR! \n${newBest} WPM \nSet by: ${discordUser}`);
-						} else {
-							channel.send(`${discordUser} Hit a new PR! \n${newBest} WPM`);
-						}
-					});	
-				}
-			})	
+			});
 		});	
-	}, 30000);
+	}, 5000);
 });
-
