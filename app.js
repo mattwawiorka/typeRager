@@ -9,8 +9,6 @@ const con = require('./db.js').con;
 const bot = new Discord.Client();
 bot.login(process.env.TOKEN);
 
-module.exports = bot;
-
 TR_PROFILE = 'https://data.typeracer.com/pit/profile?user=';
 
 // Initialize Discord Bot
@@ -19,7 +17,7 @@ bot.on('ready', () => {
 });
 
 const commands = require('./lib/messageHandler');
-bot.on('message', msg => commands.handler(msg));
+bot.on('message', msg => commands.handler(msg, bot));
 
 // Begin Reporting New Records
 bot.on('ready', () => {
